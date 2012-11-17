@@ -3,9 +3,21 @@
 
 #define __ull unsigned long long
 
+#ifdef __WINDOWS__
+#define __I64u "%I64u"
+#define __09I64u "%09I64u"
+#else
+#define __I64u "%llu"
+#define __09I64u "%09llu"
+#endif
+
+
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <iomanip>
+
+using namespace std;
 
 ///Definition
 class Bignum
@@ -16,7 +28,9 @@ public:
     Bignum(__ull);
     Bignum(const Bignum&);
 
-    Bignum operator=(const Bignum&);
+    Bignum& operator=(const Bignum&);
+
+    friend ostream& operator<< (ostream&, const Bignum&);
 
 private:
     int size_;
@@ -134,7 +148,7 @@ Bignum::Bignum(const Bignum& bn_)
 
 ///Operator
 //Assignment
-Bignum Bignum::operator=(const Bignum& bn_)
+Bignum& Bignum::operator=(const Bignum& bn_)
 {
     delete [] data_;
 
@@ -151,6 +165,31 @@ Bignum Bignum::operator=(const Bignum& bn_)
 
 //Assignment from int?
 
+///Input
+
+///Output
+ostream& operator << (ostream& os, const Bignum& bn_)
+{
+    int sz_ = bn_.size_;
+    int i = sz_ - 1;
+    while(bn_.data_[i] == 0LL && i > 0)i--;
+
+    if(bn_.sign_)// && bn_ != 0)
+    {
+        if(os == cout)printf("-");
+        else os << "-";
+    }
+
+    if(os == cout)printf(__I64u, bn_.data_[i--]);
+    else os << bn_.data_[i--];
+
+    for( ; i >= 0 ; i--)
+    {
+        if(os == cout)printf(__09I64u, bn_.data_[i]);
+        else os << setfill('0') << setw(9) << bn_.data_[i];
+    }
+    return os;
+}
 
 
 #endif // __STEP5_BIGNUM_H__
