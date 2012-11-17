@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 using namespace std;
 
@@ -30,6 +31,7 @@ public:
 
     Bignum& operator=(const Bignum&);
 
+    friend istream& operator>> (istream& is, Bignum& bn_);
     friend ostream& operator<< (ostream&, const Bignum&);
 
 private:
@@ -37,11 +39,12 @@ private:
     bool sign_;
     __ull* data_;
 
+    void remove_excess_zero();
 };
 
 ///Constructor
 //default; int
-Bignum::Bignum(int n_ = 0ULL)
+Bignum::Bignum(int n_ = 0)
 {
     if(n_ < 0)
     {
@@ -165,14 +168,75 @@ Bignum& Bignum::operator=(const Bignum& bn_)
 
 //Assignment from int?
 
-///Input
+//compare : < = >
 
-///Output
-ostream& operator << (ostream& os, const Bignum& bn_)
+// +
+
+// -
+
+// *
+
+// /
+
+// convert to int / long long / unsigned long long
+
+///I/O
+//Input
+istream& operator>> (istream& is, Bignum& bn_)
+{
+    string s_;
+    is >> s_;
+    int sl_ = s_.length();
+    int now_ptr_ = 0;
+
+    if(s_[0] == '-')
+    {
+        bn_.sign_ = 1;
+        now_ptr_++;
+        sl_--;
+    }
+    else
+    {
+        bn_.sign_ = 0;
+    }
+
+    delete [] bn_.data_;
+
+    bn_.size_ = (sl_ - 1) / 9 + 1;
+    bn_.data_ = new __ull[bn_.size_]();
+
+    int now_pos_ = bn_.size_ - 1;
+
+    int tmp_ = 0;
+    for(int i = 0; i < (sl_ - 1) % 9 + 1 ; i++)
+    {
+        tmp_ *= 10;
+        tmp_ += (s_[now_ptr_++] - '0');
+    }
+    bn_.data_[now_pos_--] = tmp_;
+
+    while(now_pos_ >= 0)
+    {
+        tmp_ = 0;
+        for(int i = 0 ; i < 9 ; i++)
+        {
+            tmp_ *= 10;
+            tmp_ += (s_[now_ptr_++] - '0');
+        }
+        bn_.data_[now_pos_--] = tmp_;
+    }
+
+    bn_.remove_excess_zero();
+
+    return is;
+}
+
+//Output
+ostream& operator<< (ostream& os, const Bignum& bn_)
 {
     int sz_ = bn_.size_;
     int i = sz_ - 1;
-    while(bn_.data_[i] == 0LL && i > 0)i--;
+    while(bn_.data_[i] == 0ULL && i > 0)i--; // can be removed
 
     if(bn_.sign_)// && bn_ != 0)
     {
@@ -191,5 +255,13 @@ ostream& operator << (ostream& os, const Bignum& bn_)
     return os;
 }
 
+///Other operation
+void Bignum::remove_excess_zero()
+{
+    int i = size_ - 1;
+    while(data_[i] == 0ULL && i > 0)i--;
+    size_ = i + 1;
+    if(size_ == 1 && data_[0] == 0ULL)sign_ = 0;
+}
 
 #endif // __STEP5_BIGNUM_H__
