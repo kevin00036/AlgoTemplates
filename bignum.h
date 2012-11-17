@@ -7,7 +7,7 @@
 
 class Bignum
 {
-
+    int length;
 };
 
 #endif // _STEP5_BIGNUM_H
