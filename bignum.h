@@ -16,6 +16,8 @@ public:
     Bignum(__ull);
     Bignum(const Bignum&);
 
+    Bignum operator=(const Bignum&);
+
 private:
     int size_;
     bool sign_;
@@ -119,19 +121,33 @@ Bignum::Bignum(__ull n_)
 }
 
 //copy
-Bignum::Bignum(const Bignum& bn)
+Bignum::Bignum(const Bignum& bn_)
 {
-    size_ = bn.size_;
-    sign_ = bn.sign_;
+    size_ = bn_.size_;
+    sign_ = bn_.sign_;
     data_ = new __ull[size_];
     for(int i = 0 ; i < size_ ; i++)
     {
-        data_[i] = bn.data_[i];
+        data_[i] = bn_.data_[i];
     }
 }
 
 ///Operator
 //Assignment
+Bignum Bignum::operator=(const Bignum& bn_)
+{
+    delete [] data_;
+
+    size_ = bn_.size_;
+    sign_ = bn_.sign_;
+    data_ = new __ull[size_];
+    for(int i = 0 ; i < size_ ; i++)
+    {
+        data_[i] = bn_.data_[i];
+    }
+
+    return *this;
+}
 
 //Assignment from int?
 
