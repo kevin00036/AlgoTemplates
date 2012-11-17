@@ -8,7 +8,7 @@
 
 using namespace std;
 
-/////////////////class definition////////////////////
+////////////////class definition//////////////////
 
 class Graph
 {
@@ -60,6 +60,7 @@ class Graph::Edges
 {
     public:
         Edges();
+        Edges(const Edges&);
         explicit Edges(int);
         explicit Edges(int, int);
         ~Edges();
@@ -103,7 +104,7 @@ class Graph::Edges::Edge
         int nodes_[2];
 };
 
-////////////////////////Practice////////////////////////////
+///////////////////Implement//////////////////////
 
 Graph::Vertex::Vertex()
 {
@@ -198,6 +199,15 @@ void Graph::Edges::Edge::reverse()
 
 Graph::Edges::Edges()
 {
+    edgeCount_ = NULL;
+    edgeSum_ = NULL;
+    edges_ = NULL;
+    nVertices_ = 0;
+}
+
+Graph::Edges::Edges(const Edges& edges)
+{
+    
 }
 
 Graph::Edges::Edges(int nVertices)
@@ -233,12 +243,9 @@ Graph::Edges::~Edges()
 
 void Graph::Edges::set(int nVertices)
 {
-    if (edgeCount_)
-        delete [] edgeCount_;
-    if (edgeSum_)
-        delete [] edgeSum_;
-    if (edges_)
-        delete [] edges_;
+    delete [] edgeCount_;
+    delete [] edgeSum_;
+    delete [] edges_;
     nVertices_ = nVertices;
     maxEdges_ = nVertices_ * nVertices_;
     edgeCount_ = new int[2 * nVertices_];
@@ -251,12 +258,9 @@ void Graph::Edges::set(int nVertices)
 
 void Graph::Edges::set(int nVertices, int maxEdges)
 {
-    if (edgeCount_)
-        delete [] edgeCount_;
-    if (edgeSum_)
-        delete [] edgeSum_;
-    if (edges_)
-        delete [] edges_;
+    delete [] edgeCount_;
+    delete [] edgeSum_;
+    delete [] edges_;
     nVertices_ = nVertices;
     maxEdges_ = maxEdges;
     edgeCount_ = new int[2 * nVertices_];
@@ -342,6 +346,9 @@ void Graph::Edges::reverse()
 
 Graph::Graph()
 {
+    nVertices_ = 0;
+    vertices_ = NULL;
+    edges_ = NULL;
 }
 
 Graph::Graph(int nVertices)
@@ -365,10 +372,8 @@ Graph::Graph(const Graph& graph)
 
 Graph::~Graph()
 {
-    if (vertices_)
-        delete [] vertices_;
-    if (edges_)
-        delete edges_;
+    delete [] vertices_;
+    delete edges_;
 }
 
 Graph::Vertex Graph::operator[](int index)
@@ -396,28 +401,28 @@ void Graph::reverse()
 void Graph::DFS(int start, bool flag = false)
 {
     if (start < nVertices_) {
-        //stack<int> st;
-        int* st = new int[nVertices_ * nVertices_];
-        //st.push(start);
-        st[0] = start;
-        int length = 1;
+        stack<int> st;
+        //int* st = new int[nVertices_ * nVertices_];
+        st.push(start);
+        //st[0] = start;
+        //int length = 1;
         int now;
         int leaveTime = 0;
-        while (length > 0) {
-        //while (!st.empty()) {
-            now = st[length - 1];
-            //now = st.top();
+        //while (length > 0) {
+        while (!st.empty()) {
+            //now = st[length - 1];
+            now = st.top();
             if (!flag) {
-                length--;
-                //st.pop();
+                //length--;
+                st.pop();
             }
             if (vertices_[now].isVisited()) {
                 if (!vertices_[now].isLeaved()) {
                     vertices_[now].leave(leaveTime);
                     leaveTime++;
                 }
-                length--;
-                //st.pop();
+                //length--;
+                st.pop();
             }
             else {
                 vertices_[now].visit();
@@ -425,44 +430,44 @@ void Graph::DFS(int start, bool flag = false)
                 int child = edges_->get(now, next);
                 while (child != -1) {
                     if (!vertices_[child].isVisited()) {
-                        st[length] = child;
-                        length++;
-                        //st.push(child);
+                        //st[length] = child;
+                        //length++;
+                        st.push(child);
                     }
                     next++;
                     child = edges_->get(now, next);
                 }
             }
         }
-        delete [] st;
+        //delete [] st;
     }
 }
 
 void Graph::BFS(int start, bool flag = false)
 {
     if (start < nVertices_) {
-        //queue<int> qu;
-        int* qu = new int[nVertices_ * nVertices_];
-        //qu.push(start);
-        int head = 1;
-        int tail = 0;
+        queue<int> qu;
+        //int* qu = new int[nVertices_ * nVertices_];
+        qu.push(start);
+        //int head = 1;
+        //int tail = 0;
         int now;
         int leaveTime = 0;
-        while (head != tail) {
-        //while (!qu.empty()) {
-            now = qu[tail];
-            //now = qu.back();
+        //while (head != tail) {
+        while (!qu.empty()) {
+            //now = qu[tail];
+            now = qu.back();
             if (!flag) {
-                tail++;
-                //qu.pop();
+                //tail++;
+                qu.pop();
             }
             if (vertices_[now].isVisited()) {
                 if (!vertices_[now].isLeaved()) {
                     vertices_[now].leave(leaveTime);
                     leaveTime++;
                 }
-                tail++;
-                //qu.pop();
+                //tail++;
+                qu.pop();
             }
             else {
                 vertices_[now].visit();
@@ -470,16 +475,16 @@ void Graph::BFS(int start, bool flag = false)
                 int child = edges_->get(now, next);
                 while (child != -1) {
                     if (!vertices_[child].isVisited()) {
-                        //qu.push(child);
-                        qu[head] = child;
-                        head++;
+                        qu.push(child);
+                        //qu[head] = child;
+                        //head++;
                     }
                     next++;
                     child = edges_->get(now, next);
                 }
             }
         }
-        delete [] qu;
+        //delete [] qu;
     }
 }
 
