@@ -31,7 +31,13 @@ public:
     ~Bignum();
 
     Bignum& operator=(const Bignum&);
-    friend bool operator== (const Bignum&, const Bignum&);
+
+    friend const bool operator== (const Bignum&, const Bignum&);
+    friend const bool operator!= (const Bignum&, const Bignum&);
+    friend const bool operator< (const Bignum&, const Bignum&);
+    friend const bool operator> (const Bignum&, const Bignum&);
+    friend const bool operator<= (const Bignum&, const Bignum&);
+    friend const bool operator>= (const Bignum&, const Bignum&);
 
     friend istream& operator>> (istream& is, Bignum& bn_);
     friend ostream& operator<< (ostream&, const Bignum&);
@@ -41,7 +47,7 @@ private:
     bool sign_;
     __ull* data_;
 
-    void remove_excess_zero();
+    void removeExcessZero_();
 };
 
 ///Global declaration
@@ -160,7 +166,7 @@ Bignum::~Bignum()
     delete [] data_;
 }
 
-///Operator
+///Assignment Operator
 //Assignment
 Bignum& Bignum::operator=(const Bignum& bn_)
 {
@@ -183,10 +189,13 @@ Bignum& Bignum::operator=(const Bignum& bn_)
 
 //Assignment from int?
 
+///Comparative Operator
 // ==
-bool operator== (const Bignum& an_, const Bignum& bn_)
+const bool operator== (const Bignum& an_, const Bignum& bn_)
 {
     if(an_.size_ != bn_.size_)return false;
+    if(an_.sign_ != bn_.sign_)return false;
+
     for(int i = 0 ; i < an_.size_ ; i++)
     {
         if(an_.data_[i] != bn_.data_[i])return false;
@@ -194,9 +203,65 @@ bool operator== (const Bignum& an_, const Bignum& bn_)
     return true;
 }
 
+// !=
+const bool operator!= (const Bignum& an_, const Bignum& bn_)
+{
+    return !(an_ == bn_);
+}
+
 // <
+const bool operator< (const Bignum& an_, const Bignum& bn_)
+{
+    if(an_.sign_ && !bn_.sign_)return true;
+    if(!an_.sign_ && bn_.sign_)return false;
+
+    bool fl = true;
+    if(an_.sign_ && bn_.sign_)fl = false;
+
+    if(an_.size_ < bn_.size_)return fl;
+    if(an_.size_ > bn_.size_)return !fl;
+
+    for(int i = an_.size_ - 1 ; i >= 0 ; i--)
+    {
+        if(an_.data_[i] < bn_.data_[i])return fl;
+        if(an_.data_[i] > bn_.data_[i])return !fl;
+    }
+
+    return false;
+}
 
 // >
+const bool operator> (const Bignum& an_, const Bignum& bn_)
+{
+    if(an_.sign_ && !bn_.sign_)return false;
+    if(!an_.sign_ && bn_.sign_)return true;
+
+    bool fl = true;
+    if(an_.sign_ && bn_.sign_)fl = false;
+
+    if(an_.size_ > bn_.size_)return fl;
+    if(an_.size_ < bn_.size_)return !fl;
+
+    for(int i = an_.size_ - 1 ; i >= 0 ; i--)
+    {
+        if(an_.data_[i] > bn_.data_[i])return fl;
+        if(an_.data_[i] < bn_.data_[i])return !fl;
+    }
+
+    return false;
+}
+
+// <=
+const bool operator<= (const Bignum& an_, const Bignum& bn_)
+{
+    return !(an_ > bn_);
+}
+
+// >=
+const bool operator>= (const Bignum& an_, const Bignum& bn_)
+{
+    return !(an_ < bn_);
+}
 
 // +
 
@@ -254,7 +319,7 @@ istream& operator>> (istream& is, Bignum& bn_)
         bn_.data_[now_pos_--] = tmp_;
     }
 
-    bn_.remove_excess_zero();
+    bn_.removeExcessZero_();
 
     return is;
 }
@@ -284,7 +349,7 @@ ostream& operator<< (ostream& os, const Bignum& bn_)
 }
 
 ///Other operation
-void Bignum::remove_excess_zero()
+void Bignum::removeExcessZero_()
 {
     int i = size_ - 1;
     while(data_[i] == 0ULL && i > 0)i--;
