@@ -24,6 +24,9 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <exception>
+#include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
@@ -83,12 +86,16 @@ public:
     long long toLL() const;
     unsigned long long toULL() const;
 
-    //Other mathematic operations
-    //log(const Bignum&)
+    //Other mathematic functions
+    friend const double log(const Bignum&); // log base 10
     //pow(const Bignum&, const int)
+    //abs(const Bignum&)
 
     //Other functions
-    //getDigit()
+    const Bignum shift(int) const; //data block shift, positive=left shift
+    //Bignum::getDigit()
+    //Bignum::getSign()
+    //Bignum::getAbs()
 
 private:
     int size_; // number of block
@@ -357,11 +364,12 @@ const Bignum operator* (const Bignum& an, const Bignum& bn)
     }
     tmpb.resizeZero(an.size_ + bn.size_);
 
-    for(int i = 0 ; i < an.size_ ; i++)
+    for(int i = 0 ; i < bn.size_ ; i++)
     {
-        for(int j = 0 ; j < bn.size_ ; j++)
+        if(bn.data_[i] == 0LL)continue;
+        for(int j = 0 ; j < an.size_ ; j++)
         {
-            tmpb.data_[i+j] += an.data_[i] * bn.data_[j];
+            tmpb.data_[i+j] += bn.data_[i] * an.data_[j];
             tmpb.data_[i+j+1] += tmpb.data_[i+j] / __BIGNUM_SEP;
             tmpb.data_[i+j] %= __BIGNUM_SEP;
         }
@@ -372,6 +380,52 @@ const Bignum operator* (const Bignum& an, const Bignum& bn)
 }
 
 // /
+const Bignum operator/ (const Bignum& an, const Bignum& bn)
+{
+    Bignum tmpb;
+    if((an.sign_ && !bn.sign_) || (!an.sign_ && bn.sign_))
+    {
+        tmpb.sign_ = true;
+    }
+    if(bn == 0)
+    {
+        domain_error r("Bignum::DevideByZero");
+        throw(r);
+        return bn;
+    }
+    if(an.size_ < bn.size_)
+    {
+        tmpb = 0;
+    }
+    else
+    {
+        Bignum ap(an), bp(bn);
+        ap.sign_ = bp.sign_ = false;
+        int maxl = bp.size_ - 1;
+
+        tmpb.resizeZero(ap.size_ - bp.size_ + 1);
+
+        for(int i = ap.size_ - bp.size_ ; i >= 0 ; i--)
+        {
+            if(ap == 0)break;
+
+            Bignum shiftbp = bp.shift(i);
+            double logEst = log(ap) - log(shiftbp);
+            long long beilu = ceil(exp(logEst) + 0.1);
+            ap -= shiftbp * beilu;
+
+            while(ap.sign_)
+            {
+                ap += shiftbp;
+                beilu--;
+            }
+            tmpb.data_[i] = beilu;
+        }
+    }
+
+    tmpb.removeExcessZero();
+    return tmpb;
+}
 
 // %
 
@@ -460,6 +514,12 @@ Bignum& Bignum::operator-= (const Bignum& bn)
 Bignum& Bignum::operator*= (const Bignum& bn)
 {
     return (*this = (*this * bn));
+}
+
+// /=
+Bignum& Bignum::operator/= (const Bignum& bn)
+{
+    return (*this = (*this / bn));
 }
 
 // ++a
@@ -576,6 +636,7 @@ int Bignum::toInt() const
 {
     long long tmp = data_[0];
     if(size_ >= 2)tmp += data_[1] * __BIGNUM_SEP;
+    if(sign_) tmp *= -1;
     int ret = tmp;
     return ret;
 }
@@ -586,6 +647,7 @@ long long Bignum::toLL() const
     long long tmp = data_[0];
     if(size_ >= 2)tmp += data_[1] * __BIGNUM_SEP;
     if(size_ >= 3)tmp += data_[2] * __BIGNUM_SEP * __BIGNUM_SEP;
+    if(sign_) tmp *= -1LL;
     return tmp;
 }
 
@@ -596,6 +658,42 @@ unsigned long long Bignum::toULL() const
     if(size_ >= 2)tmp += (unsigned long long)data_[1] * (unsigned long long)__BIGNUM_SEP;
     if(size_ >= 3)tmp += (unsigned long long)data_[2] * (unsigned long long)__BIGNUM_SEP * (unsigned long long)__BIGNUM_SEP;
     return tmp;
+}
+
+///Other mathematic function
+//log base 10
+const double log(const Bignum& bn)
+{
+    double ans;
+    if(bn <= 0)
+    {
+        domain_error r("Bignum::LogZeroNegative");
+        throw(r);
+        return 0.0;
+    }
+    double lead = bn.data_[bn.size_-1];
+    if(bn.size_ >= 2)lead += (double)bn.data_[bn.size_-2] / (double)__BIGNUM_SEP;
+    if(bn.size_ >= 3)lead += (double)bn.data_[bn.size_-3] / (double)(__BIGNUM_SEP * __BIGNUM_SEP);
+
+    ans = (double)(bn.size_ - 1) * log((double)__BIGNUM_SEP) + log(lead);
+    return ans;
+}
+
+///Other function
+//shift
+const Bignum Bignum::shift(int offset) const
+{
+    Bignum tmpb(0);
+    if(offset > -size_)
+    {
+        tmpb.resizeZero(size_ + offset);
+        for(int i = size_ - 1 ; i >= 0 ; i--)
+        {
+            if(i + offset < 0)break;
+            tmpb.data_[i+offset] = data_[i];
+        }
+    }
+    return tmpb;
 }
 
 ///Private
