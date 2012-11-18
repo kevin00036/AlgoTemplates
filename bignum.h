@@ -57,6 +57,11 @@ public:
     Bignum& operator+= (const Bignum&);
     Bignum& operator-= (const Bignum&);
 
+    Bignum& operator++ ();
+    Bignum& operator-- ();
+    const Bignum operator++ (int);
+    const Bignum operator-- (int);
+
     friend istream& operator>> (istream&, Bignum&);
     friend ostream& operator<< (ostream&, const Bignum&);
 
@@ -335,6 +340,7 @@ const Bignum Bignum::operator- () const
     tmpb.removeExcessZero();
     return tmpb;
 }
+
 // +=
 Bignum& Bignum::operator+= (const Bignum& bn)
 {
@@ -401,6 +407,33 @@ Bignum& Bignum::operator-= (const Bignum& bn)
     return *this;
 }
 
+// ++a
+Bignum& Bignum::operator++ ()
+{
+    return (*this += 1);
+}
+
+// --a
+Bignum& Bignum::operator-- ()
+{
+    return (*this -= 1);
+}
+
+// a++
+const Bignum Bignum::operator++ (int x)
+{
+    Bignum tmpb(*this);
+    ++*this;
+    return tmpb;
+}
+
+// a--
+const Bignum Bignum::operator-- (int x)
+{
+    Bignum tmpb(*this);
+    --*this;
+    return tmpb;
+}
 
 // convert to int / long long / unsigned long long
 
