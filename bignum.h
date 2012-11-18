@@ -87,15 +87,15 @@ public:
     unsigned long long toULL() const;
 
     //Other mathematic functions
-    friend const double log(const Bignum&); // log base 10
-    //pow(const Bignum&, const int)
-    //abs(const Bignum&)
+    friend const double log(const Bignum&); // natural log
+    friend const Bignum pow(const Bignum&, int); // integer power
+    friend const Bignum abs(const Bignum&); // absolute value
 
     //Other functions
     const Bignum shift(int) const; //data block shift, positive=left shift
-    //Bignum::getDigit()
-    //Bignum::getSign()
-    //Bignum::getAbs()
+    const int getDigit() const; // get how many digits (0 => 0)
+    const bool getSign() const; // get sign (positive or zero : 0 / negative : 1)
+    const Bignum getAbs() const; // get absolute value
 
 private:
     int size_; // number of block
@@ -661,7 +661,7 @@ unsigned long long Bignum::toULL() const
 }
 
 ///Other mathematic function
-//log base 10
+//natural log
 const double log(const Bignum& bn)
 {
     double ans;
@@ -677,6 +677,29 @@ const double log(const Bignum& bn)
 
     ans = (double)(bn.size_ - 1) * log((double)__BIGNUM_SEP) + log(lead);
     return ans;
+}
+
+//integer power
+const Bignum pow(const Bignum& bn, int ex)
+{
+    Bignum tmpb(0);
+    if(ex >= 0)
+    {
+        tmpb = 1;
+        for(int i = 0 ; i < ex ; i++)
+        {
+            tmpb *= bn;
+        }
+    }
+    return tmpb;
+}
+
+//absolute value
+const Bignum abs(const Bignum& bn)
+{
+    Bignum tmpb(bn);
+    tmpb.sign_ = false;
+    return tmpb;
 }
 
 ///Other function
@@ -695,6 +718,34 @@ const Bignum Bignum::shift(int offset) const
     }
     return tmpb;
 }
+
+//getDigit
+const int Bignum::getDigit() const
+{
+    if(*this == 0)return 1;
+
+    long long x = data_[size_-1];
+    int dig = (size_ - 1) * 9;
+    while(x > 0)
+    {
+        dig++;
+        x /= 10LL;
+    }
+    return dig;
+}
+
+//getSign
+const bool Bignum::getSign() const
+{
+    return sign_;
+}
+
+//getAbs
+const Bignum Bignum::getAbs() const
+{
+    return abs(*this);
+}
+
 
 ///Private
 ///Other operation
