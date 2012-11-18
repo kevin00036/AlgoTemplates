@@ -31,14 +31,18 @@ using namespace std;
 class Bignum
 {
 public:
+    //constructor
     Bignum(int);
     Bignum(long long);
     Bignum(unsigned long long);
     Bignum(const Bignum&);
+    //destructor
     ~Bignum();
 
+    //assignment
     Bignum& operator=(const Bignum&);
 
+    //comparison
     friend const bool operator== (const Bignum&, const Bignum&);
     friend const bool operator!= (const Bignum&, const Bignum&);
     friend const bool operator< (const Bignum&, const Bignum&);
@@ -46,6 +50,7 @@ public:
     friend const bool operator<= (const Bignum&, const Bignum&);
     friend const bool operator>= (const Bignum&, const Bignum&);
 
+    //arithmetic
     friend const Bignum operator+ (const Bignum&, const Bignum&);
     friend const Bignum operator- (const Bignum&, const Bignum&);
     friend const Bignum operator* (const Bignum&, const Bignum&);
@@ -54,24 +59,35 @@ public:
     const Bignum operator+ () const;
     const Bignum operator- () const;
 
+    //compound assignment
     Bignum& operator+= (const Bignum&);
     Bignum& operator-= (const Bignum&);
 
+    //increment/decrement
     Bignum& operator++ ();
     Bignum& operator-- ();
     const Bignum operator++ (int);
     const Bignum operator-- (int);
 
+    //I/O
     friend istream& operator>> (istream&, Bignum&);
     friend ostream& operator<< (ostream&, const Bignum&);
 
+    //Conversion
+    bool toBool() const;
+    int toInt() const;
+    long long toLL() const;
+    unsigned long long toULL() const;
+
 private:
-    int size_;
-    bool sign_;
+    int size_; // number of block
+    bool sign_; // true:negative | false:positive or zero
     __ull* data_;
+    // data blocks. Every blocks is __BIGNUM__SEP at max. data_[0] is low bit.
 
-    void removeExcessZero();
+    void removeExcessZero(); //remove excess zero on high bit. Remove "-0".
 
+    //Arithmetic implementation
     void addeq(const Bignum&);
     const Bignum add(const Bignum&) const;
     void subeq(const Bignum&);
@@ -213,8 +229,6 @@ Bignum& Bignum::operator=(const Bignum& bn)
 
     return *this;
 }
-
-//Assignment from int?
 
 ///Comparative Operator
 // ==
@@ -510,6 +524,40 @@ ostream& operator<< (ostream& os, const Bignum& bn)
         else os << setfill('0') << setw(9) << bn.data_[i];
     }
     return os;
+}
+
+///Conversion (currently alternative solution)
+//bool
+bool Bignum::toBool() const
+{
+    return (*this == 0);
+}
+
+//int
+int Bignum::toInt() const
+{
+    long long tmp = data_[0];
+    if(size_ >= 2)tmp += data_[1] * __BIGNUM_SEP;
+    int ret = tmp;
+    return ret;
+}
+
+//long long
+long long Bignum::toLL() const
+{
+    long long tmp = data_[0];
+    if(size_ >= 2)tmp += data_[1] * __BIGNUM_SEP;
+    if(size_ >= 3)tmp += data_[2] * __BIGNUM_SEP * __BIGNUM_SEP;
+    return tmp;
+}
+
+//unsigned long long
+unsigned long long Bignum::toULL() const
+{
+    unsigned long long tmp = (unsigned long long)data_[0];
+    if(size_ >= 2)tmp += (unsigned long long)data_[1] * (unsigned long long)__BIGNUM_SEP;
+    if(size_ >= 3)tmp += (unsigned long long)data_[2] * (unsigned long long)__BIGNUM_SEP * (unsigned long long)__BIGNUM_SEP;
+    return tmp;
 }
 
 ///Private
