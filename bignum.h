@@ -51,6 +51,9 @@ public:
     friend const Bignum operator* (const Bignum&, const Bignum&);
     friend const Bignum operator/ (const Bignum&, const Bignum&);
 
+    const Bignum operator+ () const;
+    const Bignum operator- () const;
+
     Bignum& operator+= (const Bignum&);
     Bignum& operator-= (const Bignum&);
 
@@ -319,6 +322,19 @@ const Bignum operator- (const Bignum& an, const Bignum& bn)
 
 // /
 
+// unary +
+const Bignum Bignum::operator+ () const
+{
+    return *this;
+}
+// unary -
+const Bignum Bignum::operator- () const
+{
+    Bignum tmpb(*this);
+    tmpb.sign_ = !tmpb.sign_;
+    tmpb.removeExcessZero();
+    return tmpb;
+}
 // +=
 Bignum& Bignum::operator+= (const Bignum& bn)
 {
@@ -536,6 +552,7 @@ const Bignum Bignum::add(const Bignum& bn) const // Add absolute value part
             tmpb.data_[i+1]++;
         }
     }
+    tmpb.removeExcessZero();
 
     return tmpb;
 }
@@ -556,6 +573,7 @@ void Bignum::subeq(const Bignum& bn) //Subtract absolute value part, Big - Small
         }
         else if(i >= bn.size_)break;
     }
+    removeExcessZero();
 }
 
 #endif // __STEP5_BIGNUM_H__
