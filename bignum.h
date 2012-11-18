@@ -90,6 +90,9 @@ public:
     friend const double log(const Bignum&); // natural log
     friend const Bignum pow(const Bignum&, int); // integer power
     friend const Bignum abs(const Bignum&); // absolute value
+    friend const Bignum fact(int, int = 1); //Factoria (n!)
+    friend const Bignum perm(int, int); //Permutation number P(m,n)
+    friend const Bignum comb(int, int); //Combination number C(m,n)
 
     //Other functions
     const Bignum shift(int) const; //data block shift, positive=left shift
@@ -110,6 +113,7 @@ private:
     void addeq(const Bignum&);
     const Bignum add(const Bignum&) const;
     void subeq(const Bignum&);
+    const Bignum divide(const Bignum&, bool isRmd = false) const;
 };
 
 ///Global declaration
@@ -382,53 +386,14 @@ const Bignum operator* (const Bignum& an, const Bignum& bn)
 // /
 const Bignum operator/ (const Bignum& an, const Bignum& bn)
 {
-    Bignum tmpb;
-    if((an.sign_ && !bn.sign_) || (!an.sign_ && bn.sign_))
-    {
-        tmpb.sign_ = true;
-    }
-    if(bn == 0)
-    {
-        domain_error r("Bignum::DevideByZero");
-        throw(r);
-        return bn;
-    }
-    if(an.size_ < bn.size_)
-    {
-        tmpb = 0;
-    }
-    else
-    {
-        Bignum ap(an), bp(bn);
-        ap.sign_ = bp.sign_ = false;
-        int maxl = bp.size_ - 1;
-
-        tmpb.resizeZero(ap.size_ - bp.size_ + 1);
-
-        for(int i = ap.size_ - bp.size_ ; i >= 0 ; i--)
-        {
-            if(ap == 0)break;
-
-            Bignum shiftbp = bp.shift(i);
-            double logEst = log(ap) - log(shiftbp);
-            long long beilu = ceil(exp(logEst) + 0.1);
-            ap -= shiftbp * beilu;
-
-            while(ap.sign_)
-            {
-                ap += shiftbp;
-                beilu--;
-            }
-            tmpb.data_[i] = beilu;
-        }
-    }
-
-    tmpb.removeExcessZero();
-    return tmpb;
+    return an.divide(bn);
 }
 
 // %
-
+const Bignum operator% (const Bignum& an, const Bignum& bn)
+{
+    return an.divide(bn, true);
+}
 
 // unary +
 const Bignum Bignum::operator+ () const
@@ -520,6 +485,12 @@ Bignum& Bignum::operator*= (const Bignum& bn)
 Bignum& Bignum::operator/= (const Bignum& bn)
 {
     return (*this = (*this / bn));
+}
+
+// %=
+Bignum& Bignum::operator%= (const Bignum& bn)
+{
+    return (*this = (*this % bn));
 }
 
 // ++a
@@ -702,6 +673,41 @@ const Bignum abs(const Bignum& bn)
     return tmpb;
 }
 
+//fact
+const Bignum fact(int n, int start)
+{
+    if(n < 0)
+    {
+        domain_error r("Bignum::FactNegative");
+        throw(r);
+        return Bignum(0);
+    }
+
+    Bignum tmpb(1);
+    for(int i = start ; i <= n ; i++)
+    {
+        tmpb *= i;
+    }
+
+    return tmpb;
+}
+
+//perm
+const Bignum perm(int m, int n)
+{
+    if(n < 0 || n > m)return Bignum(0);
+    return fact(m, m - n + 1);
+}
+
+//comb
+const Bignum comb(int m, int n)
+{
+    if(n < 0 || n > m)return Bignum(0);
+    if(n > m / 2)n = m - n;
+    return perm(m, n) / fact(n);
+}
+
+
 ///Other function
 //shift
 const Bignum Bignum::shift(int offset) const
@@ -849,4 +855,62 @@ void Bignum::subeq(const Bignum& bn) //Subtract absolute value part, Big - Small
     removeExcessZero();
 }
 
+// /
+const Bignum Bignum::divide(const Bignum& bn, bool isRmd) const // devide
+{
+    Bignum tmpb;
+    if(bn == 0)
+    {
+        domain_error r("Bignum::DevideByZero");
+        throw(r);
+        return bn;
+    }
+    if(size_ < bn.size_)
+    {
+        tmpb = 0;
+        if(isRmd) tmpb = *this;
+    }
+    else
+    {
+        Bignum ap(*this), bp(bn);
+        ap.sign_ = bp.sign_ = false;
+        int maxl = bp.size_ - 1;
+
+        tmpb.resizeZero(ap.size_ - bp.size_ + 1);
+
+        for(int i = ap.size_ - bp.size_ ; i >= 0 ; i--)
+        {
+            if(ap == 0)break;
+
+            Bignum shiftbp = bp.shift(i);
+            double logEst = log(ap) - log(shiftbp);
+            long long beilu = ceil(exp(logEst) + 0.1);
+            ap -= shiftbp * beilu;
+
+            while(ap.sign_)
+            {
+                ap += shiftbp;
+                beilu--;
+            }
+            tmpb.data_[i] = beilu;
+        }
+
+        if(isRmd)
+        {
+            tmpb = ap;
+        }
+    }
+
+    if(isRmd)
+    {
+        tmpb.sign_ = sign_;
+    }
+    else
+    {
+        if((sign_ && !bn.sign_) || (!sign_ && bn.sign_))tmpb.sign_ = true;
+    }
+
+    tmpb.removeExcessZero();
+    return tmpb;
+}
 #endif // __STEP5_BIGNUM_H__
