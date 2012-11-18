@@ -28,8 +28,10 @@ public:
     Bignum(long long);
     Bignum(__ull);
     Bignum(const Bignum&);
+    ~Bignum();
 
     Bignum& operator=(const Bignum&);
+    friend bool operator== (const Bignum&, const Bignum&);
 
     friend istream& operator>> (istream& is, Bignum& bn_);
     friend ostream& operator<< (ostream&, const Bignum&);
@@ -41,6 +43,9 @@ private:
 
     void remove_excess_zero();
 };
+
+///Global declaration
+
 
 ///Constructor
 //default; int
@@ -149,15 +154,25 @@ Bignum::Bignum(const Bignum& bn_)
     }
 }
 
+///Destructor
+Bignum::~Bignum()
+{
+    delete [] data_;
+}
+
 ///Operator
 //Assignment
 Bignum& Bignum::operator=(const Bignum& bn_)
 {
-    delete [] data_;
-
-    size_ = bn_.size_;
     sign_ = bn_.sign_;
-    data_ = new __ull[size_];
+
+    if(size_ != bn_.size_)
+    {
+        delete [] data_;
+        size_ = bn_.size_;
+        data_ = new __ull[size_];
+    }
+
     for(int i = 0 ; i < size_ ; i++)
     {
         data_[i] = bn_.data_[i];
@@ -168,7 +183,20 @@ Bignum& Bignum::operator=(const Bignum& bn_)
 
 //Assignment from int?
 
-//compare : < = >
+// ==
+bool operator== (const Bignum& an_, const Bignum& bn_)
+{
+    if(an_.size_ != bn_.size_)return false;
+    for(int i = 0 ; i < an_.size_ ; i++)
+    {
+        if(an_.data_[i] != bn_.data_[i])return false;
+    }
+    return true;
+}
+
+// <
+
+// >
 
 // +
 
