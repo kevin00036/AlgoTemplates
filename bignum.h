@@ -1,14 +1,21 @@
+/******************************
+ *  STEP5 Algorithm Template  *
+ *  Big number (bignum.h)     *
+ *  2012/11/17 ~ 2012/11/18   *
+ ******************************/
+
 #ifndef __STEP5_BIGNUM_H__
 #define __STEP5_BIGNUM_H__
 
-#define __ull unsigned long long
+#define __ull long long
+#define __BIGNUM_SEP 1000000000LL
 
 #ifdef __WINDOWS__
-#define __I64u "%I64u"
-#define __09I64u "%09I64u"
+#define __I64u "%I64d"
+#define __09I64u "%09I64d"
 #else
-#define __I64u "%llu"
-#define __09I64u "%09llu"
+#define __I64u "%lld"
+#define __09I64u "%09lld"
 #endif
 
 
@@ -26,7 +33,7 @@ class Bignum
 public:
     Bignum(int);
     Bignum(long long);
-    Bignum(__ull);
+    Bignum(unsigned long long);
     Bignum(const Bignum&);
     ~Bignum();
 
@@ -44,7 +51,10 @@ public:
     friend const Bignum operator* (const Bignum&, const Bignum&);
     friend const Bignum operator/ (const Bignum&, const Bignum&);
 
-    friend istream& operator>> (istream& is, Bignum& bn_);
+    Bignum& operator+= (const Bignum&);
+    Bignum& operator-= (const Bignum&);
+
+    friend istream& operator>> (istream&, Bignum&);
     friend ostream& operator<< (ostream&, const Bignum&);
 
 private:
@@ -52,12 +62,16 @@ private:
     bool sign_;
     __ull* data_;
 
-    void removeExcessZero_();
+    void removeExcessZero();
+
+    void addeq(const Bignum&);
+    const Bignum add(const Bignum&) const;
+    void subeq(const Bignum&);
 };
 
 ///Global declaration
 
-
+///Public
 ///Constructor
 //default; int
 Bignum::Bignum(int n = 0)
@@ -72,12 +86,12 @@ Bignum::Bignum(int n = 0)
         sign_ = 0;
     }
 
-    if(n >= 1000000000)
+    if(n >= __BIGNUM_SEP)
     {
         size_ = 2;
         data_ = new __ull[size_];
-        data_[0] = n % 1000000000;
-        data_[1] = n / 1000000000;
+        data_[0] = n % __BIGNUM_SEP;
+        data_[1] = n / __BIGNUM_SEP;
     }
     else
     {
@@ -100,21 +114,21 @@ Bignum::Bignum(long long n)
         sign_ = 0;
     }
 
-    if(n >= 1000000000000000000LL)
+    if(n >= __BIGNUM_SEP * __BIGNUM_SEP)
     {
         size_ = 3;
         data_ = new __ull[size_];
-        data_[0] = n % 1000000000LL;
-        n /= 1000000000LL;
-        data_[1] = n % 1000000000LL;
-        data_[2] = n / 1000000000LL;
+        data_[0] = n % __BIGNUM_SEP;
+        n /= __BIGNUM_SEP;
+        data_[1] = n % __BIGNUM_SEP;
+        data_[2] = n / __BIGNUM_SEP;
     }
-    else if(n >= 1000000000LL)
+    else if(n >= __BIGNUM_SEP)
     {
         size_ = 2;
         data_ = new __ull[size_];
-        data_[0] = n % 1000000000LL;
-        data_[1] = n / 1000000000LL;
+        data_[0] = n % __BIGNUM_SEP;
+        data_[1] = n / __BIGNUM_SEP;
     }
     else
     {
@@ -125,25 +139,25 @@ Bignum::Bignum(long long n)
 }
 
 //unsigned long long
-Bignum::Bignum(__ull n)
+Bignum::Bignum(unsigned long long n)
 {
     sign_ = 0;
 
-    if(n >= 1000000000000000000ULL)
+    if(n >= __BIGNUM_SEP * __BIGNUM_SEP)
     {
         size_ = 3;
         data_ = new __ull[size_];
-        data_[0] = n % 1000000000ULL;
-        n /= 1000000000ULL;
-        data_[1] = n % 1000000000ULL;
-        data_[2] = n / 1000000000ULL;
+        data_[0] = n % __BIGNUM_SEP;
+        n /= __BIGNUM_SEP;
+        data_[1] = n % __BIGNUM_SEP;
+        data_[2] = n / __BIGNUM_SEP;
     }
-    else if(n >= 1000000000ULL)
+    else if(n >= __BIGNUM_SEP)
     {
         size_ = 2;
         data_ = new __ull[size_];
-        data_[0] = n % 1000000000ULL;
-        data_[1] = n / 1000000000ULL;
+        data_[0] = n % __BIGNUM_SEP;
+        data_[1] = n / __BIGNUM_SEP;
     }
     else
     {
@@ -272,14 +286,105 @@ const bool operator>= (const Bignum& an, const Bignum& bn)
 // +
 const Bignum operator+ (const Bignum& an, const Bignum& bn)
 {
-
+    if(!an.sign_ && !bn.sign_)return an.add(bn);
+    else if(an.sign_ && bn.sign_)
+    {
+        Bignum tmpb = an.add(bn);
+        tmpb.sign_ = true;
+        return tmpb;
+    }
+    else if(!an.sign_ && bn.sign_)
+    {
+        Bignum tmpb(bn);
+        tmpb.sign_ = false;
+        return an - tmpb;
+    }
+    else
+    {
+        Bignum tmpb(bn);
+        tmpb.sign_ = true;
+        return an - tmpb;
+    }
 }
 
 // -
+const Bignum operator- (const Bignum& an, const Bignum& bn)
+{
+    Bignum tmpb(an);
+    tmpb -= bn;
+    return tmpb;
+}
 
 // *
 
 // /
+
+// +=
+Bignum& Bignum::operator+= (const Bignum& bn)
+{
+    if(!sign_ && !bn.sign_)
+    {
+        addeq(bn);
+    }
+    else if(sign_ && bn.sign_)
+    {
+        addeq(bn);
+        sign_ = true;
+    }
+    else if(!sign_ && bn.sign_)
+    {
+        Bignum tmpb(bn);
+        tmpb.sign_ = false;
+        *this -= tmpb;
+    }
+    else
+    {
+        Bignum tmpb(bn);
+        tmpb.sign_ = true;
+        *this -= tmpb;
+    }
+    return *this;
+}
+
+// -=
+Bignum& Bignum::operator-= (const Bignum& bn)
+{
+    if(!sign_ && !bn.sign_)
+    {
+        if(*this >= bn)subeq(bn);
+        else
+        {
+            Bignum tmpbn(bn);
+            tmpbn.subeq(*this);
+            *this = tmpbn;
+            sign_ = true;
+        }
+    }
+    else if(sign_ && bn.sign_)
+    {
+        if(*this <= bn)subeq(bn);
+        else
+        {
+            Bignum tmpbn(bn);
+            tmpbn.subeq(*this);
+            *this = tmpbn;
+            sign_ = false;
+        }
+    }
+    else if(!sign_ && bn.sign_)
+    {
+        addeq(bn);
+        sign_ = false;
+    }
+    else
+    {
+        addeq(bn);
+        sign_ = true;
+    }
+    removeExcessZero();
+    return *this;
+}
+
 
 // convert to int / long long / unsigned long long
 
@@ -329,7 +434,7 @@ istream& operator>> (istream& is, Bignum& bn)
         bn.data_[now_pos--] = tmp;
     }
 
-    bn.removeExcessZero_();
+    bn.removeExcessZero();
 
     return is;
 }
@@ -339,7 +444,7 @@ ostream& operator<< (ostream& os, const Bignum& bn)
 {
     int sz = bn.size_;
     int i = sz - 1;
-    while(bn.data_[i] == 0ULL && i > 0)i--; // can be removed
+    while(bn.data_[i] == 0LL && i > 0)i--; // can be removed
 
     if(bn.sign_)// && bn_ != 0)
     {
@@ -358,13 +463,99 @@ ostream& operator<< (ostream& os, const Bignum& bn)
     return os;
 }
 
+///Private
 ///Other operation
-void Bignum::removeExcessZero_()
+void Bignum::removeExcessZero()
 {
     int i = size_ - 1;
-    while(data_[i] == 0ULL && i > 0)i--;
+    while(data_[i] == 0LL && i > 0)i--;
     size_ = i + 1;
-    if(size_ == 1 && data_[0] == 0ULL)sign_ = 0;
+    if(size_ == 1 && data_[0] == 0LL)sign_ = 0;
+}
+
+///Operation Implementation
+// +=
+void Bignum::addeq(const Bignum& bn) //Add absolute value part
+{
+    if(bn.size_ >= size_)
+    {
+        *this = add(bn);
+        return;
+    }
+
+    for(int i = 0 ; i < bn.size_ ; i++)
+    {
+        data_[i] += bn.data_[i];
+    }
+    for(int i = 0 ; i < size_ - 1 ; i++)
+    {
+        if(data_[i] >= __BIGNUM_SEP)
+        {
+            data_[i] -= __BIGNUM_SEP;
+            data_[i+1]++;
+        }
+        else if(i >= bn.size_)break;
+    }
+
+    if(data_[size_-1] >= __BIGNUM_SEP)
+    {
+        size_++;
+        __ull* tmpdata = new __ull[size_];
+        for(int i = 0 ; i < size_ - 1 ; i++)
+        {
+            tmpdata[i] = data_[i];
+            tmpdata[size_-1] = 1LL;
+            tmpdata[size_-2] -= __BIGNUM_SEP;
+        }
+        delete [] data_;
+        data_ = tmpdata;
+    }
+}
+
+// +
+const Bignum Bignum::add(const Bignum& bn) const // Add absolute value part
+{
+    Bignum tmpb;
+    tmpb.size_ = max(size_, bn.size_) + 1;
+    delete [] tmpb.data_;
+    tmpb.data_ = new __ull[tmpb.size_]();
+
+    for(int i = 0 ; i < size_ ; i++)
+    {
+        tmpb.data_[i] += data_[i];
+    }
+    for(int i = 0 ; i < bn.size_ ; i++)
+    {
+        tmpb.data_[i] += bn.data_[i];
+    }
+    for(int i = 0 ; i < tmpb.size_ - 1 ; i++)
+    {
+        if(tmpb.data_[i] >= __BIGNUM_SEP)
+        {
+            tmpb.data_[i] -= __BIGNUM_SEP;
+            tmpb.data_[i+1]++;
+        }
+    }
+
+    return tmpb;
+}
+
+// -=
+void Bignum::subeq(const Bignum& bn) //Subtract absolute value part, Big - Small
+{
+    for(int i = 0 ; i < bn.size_ ; i++)
+    {
+        data_[i] -= bn.data_[i];
+    }
+    for(int i = 0 ; i < size_ - 1 ; i++)
+    {
+        if(data_[i] < 0LL)
+        {
+            data_[i] += __BIGNUM_SEP;
+            data_[i+1]--;
+        }
+        else if(i >= bn.size_)break;
+    }
 }
 
 #endif // __STEP5_BIGNUM_H__
