@@ -55,6 +55,7 @@ public:
     friend const Bignum operator- (const Bignum&, const Bignum&);
     friend const Bignum operator* (const Bignum&, const Bignum&);
     friend const Bignum operator/ (const Bignum&, const Bignum&);
+    friend const Bignum operator% (const Bignum&, const Bignum&);
 
     const Bignum operator+ () const;
     const Bignum operator- () const;
@@ -62,6 +63,9 @@ public:
     //compound assignment
     Bignum& operator+= (const Bignum&);
     Bignum& operator-= (const Bignum&);
+    Bignum& operator*= (const Bignum&);
+    Bignum& operator/= (const Bignum&);
+    Bignum& operator%= (const Bignum&);
 
     //increment/decrement
     Bignum& operator++ ();
@@ -79,6 +83,13 @@ public:
     long long toLL() const;
     unsigned long long toULL() const;
 
+    //Other mathematic operations
+    //log(const Bignum&)
+    //pow(const Bignum&, const int)
+
+    //Other functions
+    //getDigit()
+
 private:
     int size_; // number of block
     bool sign_; // true:negative | false:positive or zero
@@ -86,6 +97,7 @@ private:
     // data blocks. Every blocks is __BIGNUM__SEP at max. data_[0] is low bit.
 
     void removeExcessZero(); //remove excess zero on high bit. Remove "-0".
+    void resizeZero(const int); //resize data_, set every entry to zero.
 
     //Arithmetic implementation
     void addeq(const Bignum&);
@@ -217,9 +229,7 @@ Bignum& Bignum::operator=(const Bignum& bn)
 
     if(size_ != bn.size_)
     {
-        delete [] data_;
-        size_ = bn.size_;
-        data_ = new __ull[size_];
+        resizeZero(bn.size_);
     }
 
     for(int i = 0 ; i < size_ ; i++)
@@ -338,8 +348,33 @@ const Bignum operator- (const Bignum& an, const Bignum& bn)
 }
 
 // *
+const Bignum operator* (const Bignum& an, const Bignum& bn)
+{
+    Bignum tmpb;
+    if((an.sign_ && !bn.sign_) || (!an.sign_ && bn.sign_))
+    {
+        tmpb.sign_ = true;
+    }
+    tmpb.resizeZero(an.size_ + bn.size_);
+
+    for(int i = 0 ; i < an.size_ ; i++)
+    {
+        for(int j = 0 ; j < bn.size_ ; j++)
+        {
+            tmpb.data_[i+j] += an.data_[i] * bn.data_[j];
+            tmpb.data_[i+j+1] += tmpb.data_[i+j] / __BIGNUM_SEP;
+            tmpb.data_[i+j] %= __BIGNUM_SEP;
+        }
+    }
+
+    tmpb.removeExcessZero();
+    return tmpb;
+}
 
 // /
+
+// %
+
 
 // unary +
 const Bignum Bignum::operator+ () const
@@ -421,6 +456,12 @@ Bignum& Bignum::operator-= (const Bignum& bn)
     return *this;
 }
 
+// *=
+Bignum& Bignum::operator*= (const Bignum& bn)
+{
+    return (*this = (*this * bn));
+}
+
 // ++a
 Bignum& Bignum::operator++ ()
 {
@@ -471,10 +512,7 @@ istream& operator>> (istream& is, Bignum& bn)
         bn.sign_ = 0;
     }
 
-    delete [] bn.data_;
-
-    bn.size_ = (sl - 1) / 9 + 1;
-    bn.data_ = new __ull[bn.size_]();
+    bn.resizeZero((sl - 1) / 9 + 1);
 
     int now_pos = bn.size_ - 1;
 
@@ -570,6 +608,13 @@ void Bignum::removeExcessZero()
     if(size_ == 1 && data_[0] == 0LL)sign_ = 0;
 }
 
+void Bignum::resizeZero(const int sz)
+{
+    size_ = sz;
+    delete [] data_;
+    data_ = new __ull[size_]();
+}
+
 ///Operation Implementation
 // +=
 void Bignum::addeq(const Bignum& bn) //Add absolute value part
@@ -613,9 +658,7 @@ void Bignum::addeq(const Bignum& bn) //Add absolute value part
 const Bignum Bignum::add(const Bignum& bn) const // Add absolute value part
 {
     Bignum tmpb;
-    tmpb.size_ = max(size_, bn.size_) + 1;
-    delete [] tmpb.data_;
-    tmpb.data_ = new __ull[tmpb.size_]();
+    tmpb.resizeZero(max(size_, bn.size_) + 1);
 
     for(int i = 0 ; i < size_ ; i++)
     {
