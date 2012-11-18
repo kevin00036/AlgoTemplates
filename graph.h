@@ -61,8 +61,9 @@ class Graph::Edges
     public:
         Edges();
         Edges(const Edges&);
+        Edges& operator=(const Edges&);
         explicit Edges(int);
-        explicit Edges(int, int);
+        Edges(int, int);
         ~Edges();
         void set(int);
         void set(int, int);
@@ -90,6 +91,8 @@ class Graph::Edges::Edge
 {
     public:
         Edge();
+        Edge(const Edge&);
+        Edge& operator=(const Edge&);
         Edge(int, int);
         void set(int, int);
         int getFrom();
@@ -161,6 +164,21 @@ Graph::Edges::Edge::Edge()
 {
 }
 
+Graph::Edges::Edge::Edge(const Edge& edge)
+{
+    nodes_[0] = edge.nodes_[0];
+    nodes_[1] = edge.nodes_[1];
+}
+
+Graph::Edges::Edge& Graph::Edges::Edge::operator=(const Edge& edge)
+{
+    if (this != & edge) {
+        nodes_[0] = edge.nodes_[0];
+        nodes_[1] = edge.nodes_[1];
+    }
+    return *this;
+}
+
 Graph::Edges::Edge::Edge(int from, int to)
 {
     nodes_[Edge::from_] = from;
@@ -207,7 +225,44 @@ Graph::Edges::Edges()
 
 Graph::Edges::Edges(const Edges& edges)
 {
-    
+    nVertices_ = edges.nVertices_;
+    maxEdges_ = edges.maxEdges_;
+    edgeCount_ = new int[2 * nVertices_];
+    edgeSum_ = new int[nVertices_ + 1];
+    edges_ = new Edge[maxEdges_];
+    for (int i = 0; i < nVertices_; i++) {
+        edgeCount_[i] = edges.edgeCount_[i];
+        edgeCount_[i + nVertices_] = edges.edgeCount_[i + nVertices_];
+        edgeSum_[i] = edges.edgeSum_[i];
+    }
+    edgeSum_[nVertices_ + 1] = edges.edgeSum_[nVertices_];
+    for (int i = 0; i < maxEdges_; i++)
+        edges_[i] = edges.edges_[i];
+    nEdges_ = edges.nEdges_;
+}
+
+Graph::Edges& Graph::Edges::operator=(const Edges& edges)
+{
+    if (this != &edges) {
+        delete [] edgeCount_;
+        delete [] edgeSum_;
+        delete [] edges_;
+        nVertices_ = edges.nVertices_;
+        maxEdges_ = edges.maxEdges_;
+        edgeCount_ = new int[2 * nVertices_];
+        edgeSum_ = new int[nVertices_ + 1];
+        edges_ = new Edge[maxEdges_];
+        for (int i = 0; i < nVertices_; i++) {
+            edgeCount_[i] = edges.edgeCount_[i];
+            edgeCount_[i + nVertices_] = edges.edgeCount_[i + nVertices_];
+            edgeSum_[i] = edges.edgeSum_[i];
+        }
+        edgeSum_[nVertices_ + 1] = edges.edgeSum_[nVertices_];
+        for (int i = 0; i < maxEdges_; i++)
+            edges_[i] = edges.edges_[i];
+        nEdges_ = edges.nEdges_;
+    }
+    return *this;
 }
 
 Graph::Edges::Edges(int nVertices)
@@ -217,7 +272,7 @@ Graph::Edges::Edges(int nVertices)
     edgeCount_ = new int[2 * nVertices_];
     edgeSum_ = new int[nVertices_ + 1];
     edges_ = new Edge[maxEdges_];
-    fill(edgeCount_, edgeCount_ + nVertices_, 0);
+    fill(edgeCount_, edgeCount_ + 2 * nVertices_, 0);
     edgeSum_[0] = 0;
     nEdges_ = 0;
 }
@@ -229,7 +284,7 @@ Graph::Edges::Edges(int nVertices, int maxEdges)
     edgeCount_ = new int[2 * nVertices_];
     edgeSum_ = new int[nVertices_ + 1];
     edges_ = new Edge[maxEdges_];
-    fill(edgeCount_, edgeCount_ + nVertices_, 0);
+    fill(edgeCount_, edgeCount_ + 2 * nVertices_, 0);
     edgeSum_[0] = 0;
     nEdges_ = 0;
 }
@@ -251,7 +306,7 @@ void Graph::Edges::set(int nVertices)
     edgeCount_ = new int[2 * nVertices_];
     edgeSum_ = new int[nVertices_ + 1];
     edges_ = new Edge[maxEdges_];
-    fill(edgeCount_, edgeCount_ + nVertices_, 0);
+    fill(edgeCount_, edgeCount_ + 2 * nVertices_, 0);
     edgeSum_[0] = 0;
     nEdges_ = 0;
 }
@@ -266,7 +321,7 @@ void Graph::Edges::set(int nVertices, int maxEdges)
     edgeCount_ = new int[2 * nVertices_];
     edgeSum_ = new int[nVertices_ + 1];
     edges_ = new Edge[maxEdges_];
-    fill(edgeCount_, edgeCount_ + nVertices_, 0);
+    fill(edgeCount_, edgeCount_ + 2 * nVertices_, 0);
     edgeSum_[0] = 0;
     nEdges_ = 0;
 }
@@ -351,23 +406,27 @@ Graph::Graph()
     edges_ = NULL;
 }
 
-Graph::Graph(int nVertices)
+Graph::Graph(const Graph& graph)
+    :nVertices_(graph.nVertices_)
 {
-    nVertices_ = nVertices;
+    edges_ = new Edges(*(graph.edges_));
+    vertices_ = new Vertex[nVertices_];
+    for (int i = 0; i < nVertices_; i++)
+        vertices_[i] = graph.vertices_[i];
+}
+
+Graph::Graph(int nVertices)
+    :nVertices_(nVertices)
+{
     vertices_ = new Vertex[nVertices_];
     edges_ = new Edges(nVertices);
 }
 
 Graph::Graph(int nVertices, int maxEdges)
+    :nVertices_(nVertices)
 {
-    nVertices_ = nVertices;
     vertices_ = new Vertex[nVertices_];
     edges_ = new Edges(nVertices, maxEdges);
-}
-
-Graph::Graph(const Graph& graph)
-{
-    
 }
 
 Graph::~Graph()
@@ -378,8 +437,7 @@ Graph::~Graph()
 
 Graph::Vertex Graph::operator[](int index)
 {
-    if (index < nVertices_)
-        return vertices_[index];
+    return vertices_[index];
 }
 
 void Graph::addEdge(int from, int to)
