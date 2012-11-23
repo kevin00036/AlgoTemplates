@@ -1,7 +1,7 @@
 /******************************
  *  STEP5 Algorithm Template  *
  *  Big number (bignum.h)     *
- *  2012/11/17 ~ 2012/11/18   *
+ *  2012/11/17 ~ 2012/11/23   *
  ******************************/
 
 #ifndef __STEP5_BIGNUM_H__
@@ -27,8 +27,6 @@
 #include <exception>
 #include <stdexcept>
 #include <cmath>
-
-using namespace std;
 
 ///Definition
 class Bignum
@@ -77,8 +75,8 @@ public:
     const Bignum operator-- (int);
 
     //I/O
-    friend istream& operator>> (istream&, Bignum&);
-    friend ostream& operator<< (ostream&, const Bignum&);
+    friend std::istream& operator>> (std::istream&, Bignum&);
+    friend std::ostream& operator<< (std::ostream&, const Bignum&);
 
     //Conversion
     bool toBool() const;

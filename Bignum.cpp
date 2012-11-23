@@ -1,11 +1,11 @@
 /******************************
  *  STEP5 Algorithm Template  *
  *  Big number (bignum.cpp)   *
- *  2012/11/17 ~ 2012/11/18   *
+ *  2012/11/17 ~ 2012/11/23   *
  ******************************/
 
 #include <bignum.h>
-
+using namespace std;
 ///Public
 ///Constructor
 //default; int
